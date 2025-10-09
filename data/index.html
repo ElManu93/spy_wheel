@@ -2,7 +2,7 @@
 <html lang="de">
 <head>
   <meta charset="UTF-8">
-  <title>ESP32 LED Steuerung</title>
+  <title>ESP32-CAM Steuerung</title>
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
@@ -11,22 +11,34 @@
     <ul>
       <li><a href="#">Start</a></li>
       <li><a href="#">LED Steuerung</a></li>
-      <li><a href="#">Einstellungen</a></li>
+      <li><a href="#">Kamera</a></li>
     </ul>
   </div>
 
   <div class="content">
-    <h1>ESP32 LED Steuerung</h1>
-    <button onclick="toggleLED('on')">LED AN</button>
-    <button onclick="toggleLED('off')">LED AUS</button>
-  </div>
+    <h1>ESP32-CAM LED & Kamera</h1>
 
-  <script>
-    function toggleLED(state) {
-      fetch('/led/' + state)
-        .then(response => response.text())
-        .then(data => console.log(data));
-    }
-  </script>
+    <div>
+      <button onclick="toggleLED('on')">LED AN</button>
+      <button onclick="toggleLED('off')">LED AUS</button>
+    </div>
+
+    <h2>Live-Kamera</h2>
+    <img id="cameraStream" src="/camera" alt="Kameraansicht" width="480">
+
+    <script>
+      function toggleLED(state) {
+        fetch('/led/' + state)
+          .then(response => response.text())
+          .then(data => console.log(data));
+      }
+
+      // Bild regelmäßig neu laden (z. B. alle 2 Sekunden)
+      setInterval(() => {
+        const img = document.getElementById("cameraStream");
+        img.src = "/camera?" + new Date().getTime(); // Cache verhindern
+      }, 2000);
+    </script>
+  </div>
 </body>
 </html>
