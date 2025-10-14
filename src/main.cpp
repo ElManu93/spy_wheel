@@ -5,9 +5,6 @@
 #include "SPIFFS.h"
 #include "secrets.h"
 
-// Onboard LED
-const int ledPin = 4;
-bool ledState = LOW;
 
 // Webserver
 AsyncWebServer server(80);
@@ -31,12 +28,16 @@ AsyncWebServer server(80);
 #define HREF_GPIO_NUM     23
 #define PCLK_GPIO_NUM     22
 
+#define LED_PIN           4
+bool ledState = LOW;
+
 void startCameraServer();
 
 void setup() {
-  Serial.begin(9600);
-  pinMode(ledPin, OUTPUT);
-  digitalWrite(ledPin, ledState);
+  Serial.begin(115200);
+  Serial.println("Webserver is starting...");
+  pinMode(LED_PIN, OUTPUT);
+  digitalWrite(LED_PIN, ledState);
 
   // SPIFFS starten
   if(!SPIFFS.begin(true)){
@@ -44,7 +45,7 @@ void setup() {
     return;
   }
 
-    // Configurate camera
+  // Configurate camera
   camera_config_t config;
   config.ledc_channel = LEDC_CHANNEL_0;
   config.ledc_timer = LEDC_TIMER_0;
@@ -94,13 +95,13 @@ void setup() {
   // Endpunkte für LED-Steuerung
   server.on("/led/on", HTTP_GET, [](AsyncWebServerRequest *request){
     ledState = HIGH;
-    digitalWrite(ledPin, ledState);
+    digitalWrite(LED_PIN, ledState);
     request->send(200, "text/plain", "LED AN");
   });
 
   server.on("/led/off", HTTP_GET, [](AsyncWebServerRequest *request){
     ledState = LOW;
-    digitalWrite(ledPin, ledState);
+    digitalWrite(LED_PIN, ledState);
     request->send(200, "text/plain", "LED AUS");
   });
 
