@@ -1,44 +1,43 @@
 <!DOCTYPE html>
-<html lang="de">
+<html>
 <head>
   <meta charset="UTF-8">
-  <title>ESP32-CAM Steuerung</title>
-  <link rel="stylesheet" href="style.css">
+  <title>ESP32-CAM Live</title>
+  <link rel="stylesheet" href="/style.css">
 </head>
 <body>
-  <div class="sidebar">
-    <h2>Menü</h2>
-    <ul>
-      <li><a href="#">Start</a></li>
-      <li><a href="#">LED Steuerung</a></li>
-      <li><a href="#">Kamera</a></li>
-    </ul>
+  <h2>📷 ESP32-CAM Live Stream</h2>
+  <img id="stream" src="" alt="Kein Stream aktiv">
+  <div>
+    <button id="toggleBtn">▶️ Start Stream</button>
+    <button id="captureBtn">📸 Screenshot</button>
   </div>
+  <footer>Powered by ESP32-CAM</footer>
+  
+  <script>
+    const img = document.getElementById('stream');
+    const toggleBtn = document.getElementById('toggleBtn');
+    const captureBtn = document.getElementById('captureBtn');
+    let streaming = false;
 
-  <div class="content">
-    <h1>ESP32-CAM LED & Kamera</h1>
-
-    <div>
-      <button onclick="toggleLED('on')">LED AN</button>
-      <button onclick="toggleLED('off')">LED AUS</button>
-    </div>
-
-    <h2>Live-Kamera</h2>
-    <img id="cameraStream" src="/camera" alt="Kameraansicht" width="480">
-
-    <script>
-      function toggleLED(state) {
-        fetch('/led/' + state)
-          .then(response => response.text())
-          .then(data => console.log(data));
+    toggleBtn.onclick = () => {
+      if (!streaming) {
+        img.src = '/stream';
+        toggleBtn.textContent = '⏸️ Stop Stream';
+        streaming = true;
+      } else {
+        img.src = '';
+        toggleBtn.textContent = '▶️ Start Stream';
+        streaming = false;
       }
+    };
 
-      // Bild regelmäßig neu laden (z. B. alle 2 Sekunden)
-      setInterval(() => {
-        const img = document.getElementById("cameraStream");
-        img.src = "/camera?" + new Date().getTime(); // Cache verhindern
-      }, 2000);
-    </script>
-  </div>
+    captureBtn.onclick = () => {
+      const link = document.createElement('a');
+      link.href = '/capture';
+      link.download = 'esp32cam.jpg';
+      link.click();
+    };
+  </script>
 </body>
 </html>

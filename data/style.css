@@ -1,67 +1,54 @@
+/* style.css – ESP32-CAM Stream Oberfläche */
 body {
-  font-family: Arial, sans-serif;
+  font-family: 'Segoe UI', Roboto, sans-serif;
+  background: #101014;
+  color: #eaeaea;
+  text-align: center;
   margin: 0;
-  background: #9CDAD2;
-}
-
-.sidebar {
-  position: fixed;
-  left: 0;
-  top: 0;
-  width: 200px;
-  height: 100%;
-  background: #A0B5CC;
-  color: white;
-  padding: 20px;
-}
-
-.sidebar h2 {
-  margin-top: 0;
-}
-
-.sidebar ul {
-  list-style: none;
   padding: 0;
 }
 
-.sidebar ul li {
-  margin: 15px 0;
+h2 {
+  margin: 20px 0 10px;
+  font-size: 1.8rem;
+  color: #00b0ff;
+  text-shadow: 0 0 8px rgba(0,176,255,0.3);
 }
 
-.sidebar ul li a {
-  color: white;
-  text-decoration: none;
-}
-
-.sidebar ul li a:hover {
-  text-decoration: underline;
-}
-
-.content {
-  margin-left: 220px; /* Platz für Sidebar freihalten */
-  padding: 20px;
-  text-align: center;
-}
-
-h1 {
-  color: #333;
+#stream {
+  width: 90%;
+  max-width: 640px;
+  margin-top: 15px;
+  border: 2px solid #333;
+  border-radius: 10px;
+  box-shadow: 0 0 15px rgba(0,0,0,0.4);
+  background-color: #000;
 }
 
 button {
-  font-size: 20px;
-  padding: 15px 30px;
-  margin: 10px;
+  background-color: #2d89ef;
+  color: #fff;
   border: none;
+  padding: 10px 25px;
+  font-size: 16px;
+  margin: 12px;
   border-radius: 8px;
   cursor: pointer;
+  transition: all 0.25s ease-in-out;
 }
 
-button:first-of-type {
-  background: green;
-  color: white;
+button:hover {
+  background-color: #1b5dbf;
+  transform: scale(1.05);
 }
 
-button:last-of-type {
-  background: red;
-  color: white;
+button:active {
+  background-color: #164c9f;
+  transform: scale(0.98);
+}
+
+footer {
+  margin-top: 25px;
+  font-size: 14px;
+  color: #888;
 }
