@@ -29,7 +29,7 @@
 // --- HTTP-Server ---
 WiFiServer server(80);
 
-// --- Kamera-Initialisierung ---
+// --- Cam Init ---
 bool initCamera() {
   camera_config_t config;
   config.ledc_channel = LEDC_CHANNEL_0;
@@ -50,10 +50,10 @@ bool initCamera() {
   config.pin_sccb_scl = SIOC_GPIO_NUM;
   config.pin_pwdn = PWDN_GPIO_NUM;
   config.pin_reset = RESET_GPIO_NUM;
-  config.xclk_freq_hz = 22000000;
-  config.pixel_format = PIXFORMAT_JPEG;
+  config.xclk_freq_hz = 22000000;   // System clock frequency
+  config.pixel_format = PIXFORMAT_JPEG; // YUV422, GRAYSCALE, RGB565, JPEG
 
-  config.frame_size = FRAMESIZE_VGA;  // 320x240
+  config.frame_size = FRAMESIZE_VGA;  // 640 × 480
   config.jpeg_quality = 15;
   config.fb_count = 1;
 
@@ -82,6 +82,7 @@ void handleStream(WiFiClient client) {
     client.write(fb->buf, fb->len);
     client.print("\r\n");
 
+    // Return the frame buffer back to the driver for reuse
     esp_camera_fb_return(fb);
     delay(10);
   }
@@ -89,19 +90,22 @@ void handleStream(WiFiClient client) {
   client.stop();
 }
 
-// --- Einzelbild ---
-void handleCapture(WiFiClient client) {
-  camera_fb_t * fb = esp_camera_fb_get();
-  if (!fb) {
-    client.println("HTTP/1.1 500 Internal Server Error\r\n\r\nFehler bei Kamera");
-    return;
+// --- Single Frame ---
+void toggleLED(WiFiClient client) {
+  // toggle LED state
+  if (digitalRead(LED_PIN) == LOW) {
+    digitalWrite(LED_PIN, HIGH);  // LED on
+  } else {
+    digitalWrite(LED_PIN, LOW);   // LED off
   }
 
+  // Rückmeldung an Client
   client.println("HTTP/1.1 200 OK");
-  client.println("Content-Type: image/jpeg");
-  client.printf("Content-Length: %d\r\n\r\n", fb->len);
-  client.write(fb->buf, fb->len);
-  esp_camera_fb_return(fb);
+  client.println("Content-Type: text/plain\r\n\r\n");
+  client.print("LED now is ");
+  client.println(digitalRead(LED_PIN) == HIGH ? "ON" : "OFF");
+
+  client.stop();
 }
 
 // --- HTML aus SPIFFS laden ---
@@ -122,10 +126,10 @@ void serveIndex(WiFiClient client) {
   client.stop();
 }
 
-// --- Server starten ---
+// --- Start server ---
 void startCameraServer() {
   server.begin();
-  Serial.println("📡 HTTP-Server läuft auf Port 80");
+  Serial.println("HTTP-Server is running on port 80");
 
   while (true) {
     WiFiClient client = server.available();
@@ -148,27 +152,29 @@ void startCameraServer() {
           client.stop();
         }
         else if (request.indexOf("GET /stream") >= 0) handleStream(client);
-        else if (request.indexOf("GET /capture") >= 0) handleCapture(client);
+        else if (request.indexOf("GET /led/toggle") >= 0) {
+            toggleLED(client); // Client wird hier in toggleLED gestoppt
+        }
     }
 }
 
 void setup() {
   Serial.begin(115200);
   delay(500);
-  Serial.println("\nStarte ESP32-CAM...");
+  Serial.println("\nStart ESP32-CAM...");
 
   if (!SPIFFS.begin(true)) {
-    Serial.println("SPIFFS konnte nicht gestartet werden!");
+    Serial.println("SPIFFS couldn't be started!");
     while (true) delay(1000);
   }
 
   if (!initCamera()) {
-    Serial.println("Kamera konnte nicht initialisiert werden!");
+    Serial.println("Camera couldn't be initialised!");
     while (true) delay(1000);
   }
 
   WiFi.begin(ssid, password);
-  Serial.print("Verbinde mit WLAN ");
+  Serial.print("Connecting to WiFi.");
   Serial.println(ssid);
 
   while (WiFi.status() != WL_CONNECTED) {
@@ -176,7 +182,7 @@ void setup() {
     delay(500);
   }
 
-  Serial.println("\nWLAN verbunden!");
+  Serial.println("\nConnected to WIFI!");
   Serial.print("IP-Adresse: ");
   Serial.println(WiFi.localIP());
 
