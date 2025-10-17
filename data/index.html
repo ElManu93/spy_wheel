@@ -36,8 +36,6 @@
       try {
         const response = await fetch('/led/toggle');
         const text = await response.text();
-        console.log(text); // Ausgabe im Browser-Console-Fenster
-        alert(text);       // optional Popup, zeigt AN/AUS
       } catch (err) {
         console.error("Fehler beim Toggle:", err);
       }

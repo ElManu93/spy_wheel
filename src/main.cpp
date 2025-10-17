@@ -25,6 +25,7 @@
 #define PCLK_GPIO_NUM     22
 
 #define LED_PIN 4
+#define LED_MODE LOW
 
 // --- HTTP-Server ---
 WiFiServer server(80);
@@ -185,6 +186,9 @@ void setup() {
   Serial.println("\nConnected to WIFI!");
   Serial.print("IP-Adresse: ");
   Serial.println(WiFi.localIP());
+  
+  pinMode(LED_PIN, OUTPUT);
+  digitalWrite(LED_PIN, LED_MODE);
 
   startCameraServer();
 }
