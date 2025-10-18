@@ -5,7 +5,7 @@
 #include "SPIFFS.h"
 #include "secrets.h"
 
-// --- Camera pin definitions (AI Thinker) ---
+// --- Pin definitions (AI Thinker) ---
 #define PWDN_GPIO_NUM     32
 #define RESET_GPIO_NUM    -1
 #define XCLK_GPIO_NUM      0
@@ -24,13 +24,14 @@
 #define HREF_GPIO_NUM     23
 #define PCLK_GPIO_NUM     22
 
+// --- LED Pin ---
 #define LED_PIN 4
 #define LED_MODE LOW
 
 // --- HTTP-Server ---
 WiFiServer server(80);
 
-// --- Cam Init ---
+// --- Camera Init ---
 bool initCamera() {
   camera_config_t config;
   config.ledc_channel = LEDC_CHANNEL_0;
@@ -59,7 +60,7 @@ bool initCamera() {
   config.fb_count = 1;
 
   if (esp_camera_init(&config) != ESP_OK) {
-    Serial.println("Kamera-Initialisierung fehlgeschlagen");
+    Serial.println("Camera init failed");
     return false;
   }
 
@@ -77,35 +78,29 @@ void handleStream(WiFiClient client) {
     camera_fb_t * fb = esp_camera_fb_get();
     if (!fb) break;
 
-    client.printf("--%s\r\n", boundary);
-    client.println("Content-Type: image/jpeg");
-    client.printf("Content-Length: %d\r\n\r\n", fb->len);
-    client.write(fb->buf, fb->len);
-    client.print("\r\n");
+    // Send frame boundary for multipart streaming
+    client.printf("--%s\r\n", boundary); // Start of frame
+    client.println("Content-Type: image/jpeg");   // Frame content type (JPEG)
+    client.printf("Content-Length: %d\r\n\r\n", fb->len); // Frame length
+    client.write(fb->buf, fb->len); // Actuall frame data
+    client.print("\r\n"); // End of frame
 
     // Return the frame buffer back to the driver for reuse
     esp_camera_fb_return(fb);
-    delay(10);
+    delay(40);
   }
 
   client.stop();
 }
 
-// --- Single Frame ---
+// --- LED toggle ---
+// Just works if stream is not active
 void toggleLED(WiFiClient client) {
   // toggle LED state
-  if (digitalRead(LED_PIN) == LOW) {
-    digitalWrite(LED_PIN, HIGH);  // LED on
-  } else {
-    digitalWrite(LED_PIN, LOW);   // LED off
-  }
-
-  // Rückmeldung an Client
-  client.println("HTTP/1.1 200 OK");
-  client.println("Content-Type: text/plain\r\n\r\n");
-  client.print("LED now is ");
-  client.println(digitalRead(LED_PIN) == HIGH ? "ON" : "OFF");
-
+  digitalWrite(LED_PIN, digitalRead(LED_PIN) == LOW ? HIGH : LOW);
+  
+  // send response and close connection
+  client.println("HTTP/1.1 200 OK\r\n\r\n"); 
   client.stop();
 }
 
@@ -113,7 +108,7 @@ void toggleLED(WiFiClient client) {
 void serveIndex(WiFiClient client) {
   File file = SPIFFS.open("/index.html");
   if (!file) {
-    client.println("HTTP/1.1 500 Internal Server Error\r\n\r\nindex.html nicht gefunden");
+    client.println("HTTP/1.1 500 Internal Server Error\r\n\r\n");
     return;
   }
 
