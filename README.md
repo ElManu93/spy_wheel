@@ -21,7 +21,7 @@ The goal of this project is to equip a remote-controlled car with a live video s
 ## Future Work
 
 - [ ] Create 3D model for the electronics
-- [ ] See if the power supply works
+- [ ] Get a proper power supply that steps up 3,7V to the requiered 5Vs
 - [ ] Use both cores of the ESP32 in order to get more flexibilty
 - [ ] Get a RC Car
 - [ ] Recreate project for the possibility of doing races
