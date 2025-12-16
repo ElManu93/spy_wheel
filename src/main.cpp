@@ -288,5 +288,4 @@ void setup() {
 }
 
 void loop() {
-  // leer
 }
