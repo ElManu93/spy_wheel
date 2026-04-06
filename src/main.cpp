@@ -16,8 +16,8 @@ const uint16_t dest_port = DEST_PORT;
 
 // ---------- Camera settings ----------
 #define FRAME_SIZE   FRAMESIZE_QVGA 
-#define JPEG_QUALITY 25
-#define FB_COUNT     2
+#define JPEG_QUALITY 15
+#define FB_COUNT     3
 #define CHUNK_SIZE   512
 
 // ---------- AI-Thinker pins ----------
@@ -64,7 +64,7 @@ void setupCamera() {
   config.pin_sccb_scl = SIOC_GPIO_NUM;
   config.pin_pwdn     = PWDN_GPIO_NUM;
   config.pin_reset    = RESET_GPIO_NUM;
-  config.xclk_freq_hz = 37000000;
+  config.xclk_freq_hz = 25000000;
   config.pixel_format = PIXFORMAT_JPEG;
   config.frame_size   = FRAME_SIZE;
   config.jpeg_quality = JPEG_QUALITY;
@@ -80,31 +80,55 @@ void setupCamera() {
 
 // ---------- UDP streaming loop ----------
 void udpStreamerTask(void *pv) {
-  Serial.printf("UDP streamer running on core %d → %s:%d\n",
-                xPortGetCoreID(), dest_ip.toString().c_str(), dest_port);
+  Serial.printf("UDP core %d → %s:%d\n", xPortGetCoreID(), dest_ip.toString().c_str(), dest_port);
+  vTaskDelay(3000); 
 
   for (;;) {
     camera_fb_t *fb = esp_camera_fb_get();
-    if (!fb) { vTaskDelay(10); continue; }
+    if (!fb) { 
+      vTaskDelay(100); 
+      continue; 
+    }
 
     uint32_t len = fb->len;
-    uint8_t *buf = fb->buf;
+    Serial.printf("Frame %uB\n", len);
 
-    // --- Send frame header (4 bytes = length) ---
-    udp.beginPacket(dest_ip, dest_port);
-    udp.write((uint8_t*)&len, 4);
-    udp.endPacket();
+    // Header aufbauen (exakt 12 Bytes)
+    uint8_t header[12] = {0};
+    header[0] = len & 0xFF;
+    header[1] = (len >> 8) & 0xFF;
+    header[2] = (len >> 16) & 0xFF;
+    header[3] = (len >> 24) & 0xFF;
+    header[4] = 0xFF; header[5] = 0xD8;
+    header[6] = 0xFF; header[7] = 0xAA;
+    header[8] = 0x55;
+    header[9] = header[0] ^ header[1] ^ header[2] ^ header[3];
 
-    // --- Send image in 1 KB chunks ---
-    for (uint32_t sent = 0; sent < len; sent += CHUNK_SIZE) {
-      size_t n = min((size_t)CHUNK_SIZE, (size_t)(len - sent));
-      udp.beginPacket(dest_ip, dest_port);
-      udp.write(buf + sent, n);
-      udp.endPacket();
+    int retry = 0;
+    while (udp.beginPacket(dest_ip, dest_port) == 0 && retry < 100) {
+      vTaskDelay(20);
+      retry++;
+    }
+    
+    if (retry < 100) {
+      // 1. Header senden
+      udp.write(header, 12);
+      // 2. Das KOMPLETTE Bild senden
+      udp.write(fb->buf, len);
+      
+      int success = udp.endPacket();
+      // success == 1 bedeutet erfolgreich gesendet!
+      if (success) {
+          Serial.printf("✓ Frame gesendet (Paketgröße: %u Bytes)\n", 12 + len);
+      } else {
+          Serial.println("✗ Senden fehlgeschlagen");
+      }
+    } else {
+      Serial.println("✗ UDP BEGIN FAILED");
     }
 
     esp_camera_fb_return(fb);
-    vTaskDelay(1);
+    vTaskDelay(100); 
   }
 }
 
